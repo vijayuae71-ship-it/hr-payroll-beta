@@ -2,13 +2,13 @@
 <html lang="en" data-theme="corporate">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>HR & Payroll Manager - Beta Test</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏢</text></svg>">
   <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone@7.24.0/babel.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
   <script src="https://unpkg.com/lucide-react@0.344.0/dist/umd/lucide-react.min.js"></script>
@@ -237,14 +237,43 @@ table th {
   flex-shrink: 0;
 }
 
+  
+    /* Loading Screen */
+    #loading-screen {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(135deg, #1e3a5f 0%, #1a365d 50%, #0f2744 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 9999; color: white; font-family: system-ui, -apple-system, sans-serif;
+      transition: opacity 0.4s ease;
+    }
+    #loading-screen .logo { font-size: 3rem; margin-bottom: 1rem; animation: pulse 2s infinite; }
+    #loading-screen h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+    #loading-screen .subtitle { opacity: 0.7; font-size: 0.875rem; margin-bottom: 2rem; }
+    #loading-screen .spinner {
+      width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: #60a5fa; border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    #loading-screen .status { margin-top: 1rem; font-size: 0.75rem; opacity: 0.5; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+    #loading-screen .error-box {
+      margin-top: 1.5rem; padding: 1rem 1.5rem; background: rgba(239,68,68,0.15);
+      border: 1px solid rgba(239,68,68,0.3); border-radius: 0.5rem; text-align: center;
+    }
+    #loading-screen .error-box p { color: #fca5a5; font-size: 0.875rem; margin-bottom: 0.75rem; }
+    #loading-screen .retry-btn {
+      padding: 0.5rem 2rem; background: #3b82f6; color: white;
+      border: none; border-radius: 0.375rem; cursor: pointer; font-weight: 500;
+    }
+
   </style>
 </head>
 <body>
   <div id="root">
     <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;">
       <span class="loading loading-spinner loading-lg text-primary"></span>
-      <p class="text-base-content/60">Loading HR & Payroll Manager...</p>
-      <p class="text-xs text-base-content/40">First load may take a moment while we set up your database</p>
+      <p class="text-base-content/60">Setting up your workspace...</p>
+      <p class="text-xs text-base-content/40">First load may take 10-15 seconds on mobile</p>
     </div>
   </div>
 
@@ -7093,5 +7122,48 @@ createRoot(document.getElementById('root')!).render(<App />);
     });
 
   </script>
+
+  <script>
+    // Hide loading screen once React renders content
+    (function() {
+      var checkInterval = setInterval(function() {
+        var root = document.getElementById('root');
+        if (root && root.children.length > 0) {
+          clearInterval(checkInterval);
+          clearTimeout(errorTimeout);
+          var screen = document.getElementById('loading-screen');
+          if (screen) {
+            screen.style.opacity = '0';
+            setTimeout(function() { screen.style.display = 'none'; }, 400);
+          }
+        }
+      }, 200);
+      
+      // Error timeout - if app hasn't loaded in 30 seconds, show error
+      var errorTimeout = setTimeout(function() {
+        clearInterval(checkInterval);
+        var screen = document.getElementById('loading-screen');
+        if (screen) {
+          var status = document.getElementById('load-status');
+          if (status) status.style.display = 'none';
+          var spinner = screen.querySelector('.spinner');
+          if (spinner) spinner.style.display = 'none';
+          var errBox = document.createElement('div');
+          errBox.className = 'error-box';
+          errBox.innerHTML = '<p>Taking longer than expected. This could be a slow connection.</p>' +
+            '<button class="retry-btn" onclick="location.reload()">Retry</button>';
+          screen.appendChild(errBox);
+        }
+      }, 30000);
+      
+      // Also catch global errors
+      window.onerror = function(msg, url, line) {
+        console.error('App error:', msg, url, line);
+        var status = document.getElementById('load-status');
+        if (status) status.textContent = 'Loading modules...';
+      };
+    })();
+  </script>
+
 </body>
 </html>
